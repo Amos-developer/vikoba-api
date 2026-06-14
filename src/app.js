@@ -1,7 +1,7 @@
 import express from "express";
 
 import memberRoutes
-  from "./routes/member.routes.js";
+  from "./routes/member.route.js";
 
 const app = express();
 
