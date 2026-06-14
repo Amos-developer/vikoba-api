@@ -1,0 +1,29 @@
+{
+  "name": "vikoba-api",
+  "version": "1.0.0",
+  "description": "RESTful API for managing VICOBA groups, members, savings, loans, contributions, and repayments using Node.js, Express.js, Docker, and MVC architecture.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amos-developer/vikoba-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Amos-developer/vikoba-api/issues"
+  },
+  "homepage": "https://github.com/Amos-developer/vikoba-api#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
