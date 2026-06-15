@@ -1,7 +1,20 @@
 services:
+  api:
+    build: .
+    container_name: vikoba-api
+
+    ports:
+      - "3002:3000"
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:16
-
     container_name: vikoba-postgres
 
     environment:
@@ -15,6 +28,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
