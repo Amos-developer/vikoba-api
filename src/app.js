@@ -3,6 +3,10 @@ import express from "express";
 import memberRoutes
   from "./routes/member.route.js";
 
+  import {
+  errorHandler,
+} from "./middlewares/error.middleware.js";
+
 const app = express();
 
 app.use(express.json());
@@ -18,4 +22,5 @@ app.use(
   memberRoutes
 );
 
+app.use(errorHandler);
 export default app;

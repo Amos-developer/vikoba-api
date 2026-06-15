@@ -6,10 +6,20 @@ import {
   getMemberById,
 } from "../controllers/member.controller.js";
 
+import {
+  createMemberValidation,
+} from "../validators/member.validator.js";
+
+import {
+  validate,
+} from "../middlewares/validate.middleware.js";
+
 const router = Router();
 
 router.post(
   "/",
+  createMemberValidation,
+  validate,
   createMember
 );
 
