@@ -7,6 +7,9 @@ import memberRoutes
   errorHandler,
 } from "./middlewares/error.middleware.js";
 
+import authRoutes
+from "./routes/auth.routes.js";
+
 const app = express();
 
 app.use(express.json());
@@ -20,6 +23,11 @@ app.get("/", (req, res) => {
 app.use(
   "/api/members",
   memberRoutes
+);
+
+app.use(
+  "/api/auth",
+  authRoutes
 );
 
 app.use(errorHandler);

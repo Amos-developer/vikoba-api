@@ -9,6 +9,10 @@ services:
     env_file:
       - .env
 
+    volumes:
+      - .:/app
+      - /app/node_modules
+
     depends_on:
       postgres:
         condition: service_healthy

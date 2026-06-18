@@ -14,6 +14,11 @@ import {
   validate,
 } from "../middlewares/validate.middleware.js";
 
+import {
+  protect
+}
+from "../middlewares/auth.middleware.js";
+
 const router = Router();
 
 router.post(
@@ -32,5 +37,11 @@ router.get(
   "/:id",
   getMemberById
 );
+
+router.get("/", protect, getMembers);
+
+router.get("/:id", protect, getMemberById);
+
+router.post("/", protect, createMember);
 
 export default router;
