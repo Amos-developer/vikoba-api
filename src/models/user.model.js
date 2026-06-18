@@ -6,6 +6,7 @@ export class User {
       name,
       email,
       password,
+      role
     } = userData;
 
     const query = `
@@ -13,10 +14,11 @@ export class User {
       (
         name,
         email,
-        password
+        password,
+        role
       )
-      VALUES ($1,$2,$3)
-      RETURNING id,name,email;
+      VALUES ($1,$2,$3,$4)
+      RETURNING id,name,email,role;
     `;
 
     const result =
@@ -24,6 +26,7 @@ export class User {
         name,
         email,
         password,
+        role
       ]);
 
     return result.rows[0];

@@ -15,33 +15,36 @@ import {
 } from "../middlewares/validate.middleware.js";
 
 import {
-  protect
-}
-from "../middlewares/auth.middleware.js";
+  protect,
+} from "../middlewares/auth.middleware.js";
+
+import {
+  authorizeRoles,
+} from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.post(
-  "/",
-  createMemberValidation,
-  validate,
-  createMember
-);
-
 router.get(
   "/",
+  protect,
+  authorizeRoles("admin", "secretary"),
   getMembers
 );
 
 router.get(
   "/:id",
+  protect,
+  authorizeRoles("admin", "secretary"),
   getMemberById
 );
 
-router.get("/", protect, getMembers);
-
-router.get("/:id", protect, getMemberById);
-
-router.post("/", protect, createMember);
+router.post(
+  "/",
+  protect,
+  authorizeRoles("admin"),
+  createMemberValidation,
+  validate,
+  createMember
+);
 
 export default router;

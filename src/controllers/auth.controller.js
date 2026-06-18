@@ -11,7 +11,8 @@ async (req,res) => {
   const {
     name,
     email,
-    password
+    password,
+    role
   } = req.body;
 
   const existingUser =
@@ -37,7 +38,8 @@ async (req,res) => {
       name,
       email,
       password:
-      hashedPassword
+      hashedPassword,
+      role: role || "member"
     });
 
   res.status(201).json({
@@ -85,7 +87,8 @@ async (req,res) => {
   const token =
     jwt.sign(
       {
-        userId:user.id
+        userId:user.id,
+        role:user.role
       },
       process.env.JWT_SECRET,
       {
