@@ -10,6 +10,10 @@ import memberRoutes
 import authRoutes
 from "./routes/auth.routes.js";
 
+import savingsRoutes from "./routes/savings.routes.js";  
+
+import loanRoutes from "./routes/loan.routes.js";
+
 const app = express();
 
 app.use(express.json());
@@ -28,6 +32,16 @@ app.use(
 app.use(
   "/api/auth",
   authRoutes
+);
+
+app.use(
+  "/api/savings",
+  savingsRoutes
+);
+
+app.use(
+  "/api/loans",
+  loanRoutes
 );
 
 app.use(errorHandler);
