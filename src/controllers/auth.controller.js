@@ -84,6 +84,15 @@ async (req,res) => {
       });
   }
 
+  if (user.role !== "admin") {
+    return res.status(403)
+      .json({
+        success:false,
+        message:
+        "Only admin users can login"
+      });
+  }
+
   const token =
     jwt.sign(
       {
