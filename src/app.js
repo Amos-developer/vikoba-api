@@ -17,6 +17,9 @@ import loanRoutes from "./routes/loan.routes.js";
 
 import dashboardRoutes from "./routes/dashboard.routes.js";
 
+import transactionRoutes
+from "./routes/transaction.routes.js";
+
 const app = express();
 
 app.use(express.json());
@@ -57,6 +60,11 @@ app.use(
 app.use(
   "/api/dashboard", 
   dashboardRoutes
+);
+
+app.use(
+  "/api/transactions",
+  transactionRoutes
 );
 
 app.use(errorHandler);
