@@ -15,6 +15,7 @@ async (req,res) => {
     role
   } = req.body;
 
+
   const existingUser =
     await User.findByEmail(email);
 
