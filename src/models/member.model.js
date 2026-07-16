@@ -1,14 +1,9 @@
 import { pool } from "../config/database.js";
 
 export class Member {
-    // Create a new member
+  // Create a new member
   static async create(memberData) {
-    const {
-      first_name,
-      last_name,
-      phone,
-      email,
-    } = memberData;
+    const { first_name, last_name, phone, email } = memberData;
 
     const query = `
       INSERT INTO members
@@ -22,36 +17,57 @@ export class Member {
       RETURNING *;
     `;
 
-    const values = [
-      first_name,
-      last_name,
-      phone,
-      email,
-    ];
+    const values = [first_name, last_name, phone, email];
 
-    const result =
-      await pool.query(query, values);
+    const result = await pool.query(query, values);
 
     return result.rows[0];
   }
 
-//   Get all members
+  // Get all members
   static async findAll() {
-    const result =
-      await pool.query(
-        "SELECT * FROM members ORDER BY id DESC"
-      );
+    const result = await pool.query("SELECT * FROM members ORDER BY id DESC");
 
     return result.rows;
   }
 
-//   Get a member by ID
+  // Get a member by ID
   static async findById(id) {
-    const result =
-      await pool.query(
-        "SELECT * FROM members WHERE id = $1",
-        [id]
-      );
+    const result = await pool.query("SELECT * FROM members WHERE id = $1", [
+      id,
+    ]);
+
+    return result.rows[0];
+  }
+
+  static async updateById(id, memberData) {
+    const { first_name, last_name, phone, email } = memberData;
+
+    const result = await pool.query(
+      `
+      UPDATE members
+      SET first_name = $2,
+          last_name = $3,
+          phone = $4,
+          email = $5
+      WHERE id = $1
+      RETURNING *;
+      `,
+      [id, first_name, last_name, phone, email],
+    );
+
+    return result.rows[0];
+  }
+
+  static async deleteById(id) {
+    const result = await pool.query(
+      `
+      DELETE FROM members
+      WHERE id = $1
+      RETURNING *;
+      `,
+      [id],
+    );
 
     return result.rows[0];
   }
