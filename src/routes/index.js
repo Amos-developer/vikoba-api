@@ -10,6 +10,7 @@ import penaltyRoutes from "./penalty.routes.js";
 import repaymentRoutes from "./repayment.routes.js";
 import reportRoutes from "./report.routes.js";
 import savingsRoutes from "./savings.routes.js";
+import socialFundRoutes from "./socialFund.routes.js";
 import transactionRoutes from "./transaction.routes.js";
 import userRoutes from "./user.routes.js";
 
@@ -25,9 +26,9 @@ router.use("/penalties", penaltyRoutes);
 router.use("/repayments", repaymentRoutes);
 router.use("/reports", reportRoutes);
 router.use("/savings", savingsRoutes);
+router.use("/social-fund", socialFundRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/users", userRoutes);
 
 export default router;
-
 

@@ -97,10 +97,11 @@ export class Report {
       (summary, row) => {
         const amount = Number(row.total);
         summary[row.direction] += amount;
-        summary.byType[row.type] = amount;
+        summary.byType[row.type] = (summary.byType[row.type] || 0) + amount;
+        summary.byTypeAndDirection[`${row.type}_${row.direction}`] = amount;
         return summary;
       },
-      { inflow: 0, outflow: 0, byType: {} },
+      { inflow: 0, outflow: 0, byType: {}, byTypeAndDirection: {} },
     );
 
     return {
@@ -119,7 +120,13 @@ export class Report {
         totalSavings: totals.byType.saving || 0,
         totalRepayments: totals.byType.repayment || 0,
         totalFines: totals.byType.fine || 0,
-        totalSocialFund: totals.byType.social_fund || 0,
+        totalSocialFund:
+          (totals.byTypeAndDirection.social_fund_inflow || 0) -
+          (totals.byTypeAndDirection.social_fund_outflow || 0),
+        totalSocialFundContributions:
+          totals.byTypeAndDirection.social_fund_inflow || 0,
+        totalSocialFundDisbursements:
+          totals.byTypeAndDirection.social_fund_outflow || 0,
         totalLoanDisbursements: totals.byType.loan_disbursement || 0,
         totalExpenses: totals.byType.expense || 0,
         outstandingLoanBalance: loans.rows.reduce(

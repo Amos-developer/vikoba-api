@@ -117,8 +117,32 @@ export class Approval {
         [request.entity_id],
       );
       if (!result.rowCount) throw Object.assign(new Error("Penalty not found"), { statusCode: 404 });
+    } else if (request.action_type === "social_fund_disbursement") {
+      const balanceResult = await client.query(`
+        SELECT COALESCE(SUM(CASE WHEN entry_type='contribution' THEN amount ELSE -amount END),0) AS balance
+        FROM social_fund_entries
+      `);
+      if (Number(payload.amount) > Number(balanceResult.rows[0].balance)) {
+        const error = new Error("Social-fund balance is insufficient for this support payment");
+        error.statusCode = 400; throw error;
+      }
+      const entry = await client.query(
+        `INSERT INTO social_fund_entries
+          (entry_type, category, member_id, beneficiary_name, amount,
+           description, reference, recorded_by, approval_request_id)
+         VALUES ('disbursement',$1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+        [payload.category, payload.member_id || null, payload.beneficiary_name,
+          payload.amount, payload.description, payload.reference || null,
+          reviewerId, request.id],
+      );
+      await client.query(
+        `INSERT INTO transactions
+          (member_id, amount, type, direction, description, reference, recorded_by)
+         VALUES ($1,$2,'social_fund','outflow',$3,$4,$5)`,
+        [payload.member_id || null, payload.amount, payload.description,
+          payload.reference || `SOCIAL-OUT-${entry.rows[0].id}`, reviewerId],
+      );
     }
   }
 }
-
 
