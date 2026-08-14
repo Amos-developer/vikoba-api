@@ -13,7 +13,9 @@ const meetingSelect = `
         'id', ma.id, 'member_id', ma.member_id,
         'first_name', m.first_name, 'last_name', m.last_name,
         'attendance_status', ma.attendance_status,
-        'contribution_amount', ma.contribution_amount, 'notes', ma.notes
+        'contribution_amount', ma.contribution_amount, 'notes', ma.notes,
+        'penalty_id', p.id, 'penalty_amount', p.amount,
+        'penalty_reason', p.reason, 'penalty_status', p.status
       ) ORDER BY m.first_name, m.last_name) FILTER (WHERE ma.id IS NOT NULL),
       '[]'::json
     ) AS attendance
@@ -21,6 +23,7 @@ const meetingSelect = `
   LEFT JOIN users u ON u.id = mt.created_by
   LEFT JOIN meeting_attendance ma ON ma.meeting_id = mt.id
   LEFT JOIN members m ON m.id = ma.member_id
+  LEFT JOIN penalties p ON p.meeting_id = mt.id AND p.member_id = ma.member_id
 `;
 
 export class Meeting {
@@ -70,6 +73,32 @@ export class Meeting {
           [meetingId, entry.member_id, entry.attendance_status || "present",
             Number(entry.contribution_amount || 0), entry.notes || null],
         );
+
+        const penaltyAmount = Number(entry.penalty_amount || 0);
+        if (penaltyAmount > 0) {
+          const defaultReason = entry.attendance_status === "absent"
+            ? "Missed meeting"
+            : entry.attendance_status === "late"
+              ? "Late arrival"
+              : "Breach of group rules";
+          await client.query(
+            `INSERT INTO penalties
+              (member_id, amount, reason, status, meeting_id)
+             VALUES ($1,$2,$3,'unpaid',$4)
+             ON CONFLICT (meeting_id, member_id) WHERE meeting_id IS NOT NULL
+             DO UPDATE SET amount = EXCLUDED.amount, reason = EXCLUDED.reason,
+               updated_at = NOW()
+             WHERE penalties.status = 'unpaid'`,
+            [entry.member_id, penaltyAmount,
+              entry.penalty_reason?.trim() || defaultReason, meetingId],
+          );
+        } else if (id) {
+          await client.query(
+            `DELETE FROM penalties
+             WHERE meeting_id = $1 AND member_id = $2 AND status = 'unpaid'`,
+            [meetingId, entry.member_id],
+          );
+        }
       }
       await client.query("COMMIT");
       return this.findById(meetingId);

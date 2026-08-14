@@ -11,6 +11,13 @@ const validate = (body) => {
     const error = new Error("Each member can appear only once in attendance");
     error.statusCode = 400; throw error;
   }
+  const invalidPenalty = (body.attendance || []).some(
+    (item) => Number(item.penalty_amount || 0) < 0,
+  );
+  if (invalidPenalty) {
+    const error = new Error("Meeting penalty amounts cannot be negative");
+    error.statusCode = 400; throw error;
+  }
 };
 
 export const getMeetings = asyncHandler(async (req, res) => {
