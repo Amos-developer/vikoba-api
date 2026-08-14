@@ -9,7 +9,7 @@ import { protect } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
-router.use(protect, authorizeRoles("admin"));
+router.use(protect, authorizeRoles("chairperson", "secretary"));
 router.get("/", getPenalties);
 router.post("/", createPenalty);
 router.patch("/:id", updatePenalty);

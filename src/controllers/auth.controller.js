@@ -70,6 +70,13 @@ async (req,res) => {
       });
   }
 
+  if (user.is_active === false) {
+    return res.status(403).json({
+      success: false,
+      message: "This account has been deactivated",
+    });
+  }
+
   const isMatch =
     await bcrypt.compare(
       password,
@@ -82,15 +89,6 @@ async (req,res) => {
         success:false,
         message:
         "Invalid credentials"
-      });
-  }
-
-  if (user.role !== "admin") {
-    return res.status(403)
-      .json({
-        success:false,
-        message:
-        "Only admin users can login"
       });
   }
 
@@ -112,3 +110,5 @@ async (req,res) => {
     token
   });
 };
+
+

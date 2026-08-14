@@ -9,7 +9,7 @@ import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.use(protect, authorizeRoles("admin", "treasurer"));
+router.use(protect, authorizeRoles("chairperson", "treasurer"));
 
 router.post(
   "/",

@@ -18,12 +18,12 @@ import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.get("/", protect, authorizeRoles("admin", "secretary"), getMembers);
+router.get("/", protect, authorizeRoles("chairperson", "secretary"), getMembers);
 
 router.get(
   "/:id",
   protect,
-  authorizeRoles("admin", "secretary"),
+  authorizeRoles("chairperson", "secretary"),
   getMemberById,
 );
 
@@ -41,3 +41,5 @@ router.patch("/:id", protect, authorizeRoles("admin"), updateMember);
 router.delete("/:id", protect, authorizeRoles("admin"), deleteMember);
 
 export default router;
+
+

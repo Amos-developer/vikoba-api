@@ -1,4 +1,5 @@
 import { Penalty } from "../models/penalty.model.js";
+import { Approval } from "../models/approval.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const validatePenalty = (data) => {
@@ -25,6 +26,20 @@ export const createPenalty = asyncHandler(async (req, res) => {
 });
 
 export const updatePenalty = asyncHandler(async (req, res) => {
+  if (req.body.status === "waived") {
+    const approval = await Approval.create({
+      action_type: "penalty_waiver",
+      entity_id: Number(req.params.id),
+      payload: {},
+      reason: req.body.approval_reason || "Penalty waiver requested",
+      requested_by: req.user.userId,
+    });
+    return res.status(202).json({
+      success: true,
+      message: "Penalty waiver submitted for approval",
+      data: approval,
+    });
+  }
   const penalty = await Penalty.updateById(req.params.id, req.body);
   if (!penalty) {
     const error = new Error("Penalty not found");

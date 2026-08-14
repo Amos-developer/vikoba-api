@@ -1,4 +1,5 @@
 import { Transaction } from "../models/transaction.model.js";
+import { Approval } from "../models/approval.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const movementTypes = new Set([
@@ -18,6 +19,20 @@ export const createTransaction = asyncHandler(async (req, res) => {
     const error = new Error("A member is required for this movement type");
     error.statusCode = 400;
     throw error;
+  }
+
+  if (["withdrawal", "expense"].includes(type)) {
+    const approval = await Approval.create({
+      action_type: type,
+      payload: { member_id, amount: Number(amount), description: description.trim(), reference },
+      reason: req.body.approval_reason || description.trim(),
+      requested_by: req.user.userId,
+    });
+    return res.status(202).json({
+      success: true,
+      message: `${type === "expense" ? "Expense" : "Withdrawal"} submitted for approval`,
+      data: approval,
+    });
   }
 
   const transaction = await Transaction.create({

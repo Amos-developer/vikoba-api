@@ -13,10 +13,12 @@ import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.get("/", protect, authorizeRoles("admin"), getSavings);
-router.get("/:id", protect, authorizeRoles("admin"), getSavingById);
-router.post("/", protect, authorizeRoles("admin"), createSaving);
-router.patch("/:id", protect, authorizeRoles("admin"), updateSaving);
-router.delete("/:id", protect, authorizeRoles("admin"), deleteSaving);
+router.get("/", protect, authorizeRoles("treasurer", "secretary"), getSavings);
+router.get("/:id", protect, authorizeRoles("treasurer", "secretary"), getSavingById);
+router.post("/", protect, authorizeRoles("treasurer"), createSaving);
+router.patch("/:id", protect, authorizeRoles("treasurer"), updateSaving);
+router.delete("/:id", protect, authorizeRoles("treasurer"), deleteSaving);
 
 export default router;
+
+

@@ -15,18 +15,20 @@ import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.get("/", protect, authorizeRoles("admin"), getLoans);
-router.get("/:id", protect, authorizeRoles("admin"), getLoanById);
+router.get("/", protect, authorizeRoles("chairperson", "treasurer"), getLoans);
+router.get("/:id", protect, authorizeRoles("chairperson", "treasurer"), getLoanById);
 
-router.post("/", protect, authorizeRoles("admin"), createLoan);
-router.patch("/:id", protect, authorizeRoles("admin"), updateLoan);
-router.delete("/:id", protect, authorizeRoles("admin"), deleteLoan);
+router.post("/", protect, authorizeRoles("treasurer"), createLoan);
+router.patch("/:id", protect, authorizeRoles("treasurer"), updateLoan);
+router.delete("/:id", protect, authorizeRoles("treasurer"), deleteLoan);
 
 router.patch(
   "/:id/approve",
   protect,
-  authorizeRoles("admin", "treasurer"),
+  authorizeRoles("chairperson", "treasurer"),
   approveLoan,
 );
 
 export default router;
+
+
