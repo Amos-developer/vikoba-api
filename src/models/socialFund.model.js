@@ -13,9 +13,11 @@ export class SocialFund {
       `),
       pool.query(`
         SELECT ('approval-' || a.id)::varchar AS id,
-               'disbursement'::varchar AS entry_type,
+               CASE WHEN a.action_type = 'social_fund_contribution'
+                 THEN 'contribution' ELSE 'disbursement' END::varchar AS entry_type,
                CONCAT(
-                 a.payload->>'category',
+                 CASE WHEN a.action_type = 'social_fund_contribution'
+                   THEN 'contribution' ELSE a.payload->>'category' END,
                  CASE a.status
                    WHEN 'pending' THEN ' - pending approval'
                    ELSE ' - rejected'
@@ -32,7 +34,7 @@ export class SocialFund {
         FROM approval_requests a
         LEFT JOIN members m ON m.id = NULLIF(a.payload->>'member_id', '')::bigint
         JOIN users u ON u.id = a.requested_by
-        WHERE a.action_type = 'social_fund_disbursement'
+        WHERE a.action_type IN ('social_fund_disbursement', 'social_fund_contribution')
           AND a.status IN ('pending', 'rejected')
         ORDER BY a.created_at DESC, a.id DESC
       `),

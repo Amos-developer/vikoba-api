@@ -117,7 +117,9 @@ export class Report {
         totalInflows: totals.inflow,
         totalOutflows: totals.outflow,
         closingCash: totals.inflow - totals.outflow,
-        totalSavings: totals.byType.saving || 0,
+        totalSavings:
+          (totals.byTypeAndDirection.saving_inflow || 0) -
+          (totals.byTypeAndDirection.saving_outflow || 0),
         totalRepayments: totals.byType.repayment || 0,
         totalFines: totals.byType.fine || 0,
         totalSocialFund:

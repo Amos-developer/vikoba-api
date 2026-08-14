@@ -34,8 +34,15 @@ export const createSocialFundEntry = asyncHandler(async (req, res) => {
     return res.status(202).json({ success: true,
       message: "Social-fund disbursement submitted for approval", data: approval });
   }
-  const entry = await SocialFund.createContribution({ member_id,
-    amount: Number(amount), description: description.trim(), reference,
-    recorded_by: req.user.userId });
-  res.status(201).json({ success: true, data: entry });
+  const approval = await Approval.create({
+    action_type: "social_fund_contribution",
+    payload: { member_id, amount: Number(amount), description: description.trim(), reference },
+    reason: `Transfer member savings to social fund: ${description.trim()}`,
+    requested_by: req.user.userId,
+  });
+  res.status(202).json({
+    success: true,
+    message: "Social-fund contribution submitted for approval",
+    data: approval,
+  });
 });

@@ -117,6 +117,59 @@ export class Approval {
         [request.entity_id],
       );
       if (!result.rowCount) throw Object.assign(new Error("Penalty not found"), { statusCode: 404 });
+    } else if (request.action_type === "social_fund_contribution") {
+      const savingsResult = await client.query(
+        `SELECT id, amount FROM savings
+         WHERE member_id = $1 ORDER BY created_at, id FOR UPDATE`,
+        [payload.member_id],
+      );
+      const availableSavings = savingsResult.rows.reduce(
+        (sum, saving) => sum + Number(saving.amount), 0,
+      );
+      if (Number(payload.amount) > availableSavings) {
+        const error = new Error("Member savings are insufficient for this social-fund contribution");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      let remaining = Number(payload.amount);
+      for (const saving of savingsResult.rows) {
+        if (remaining <= 0) break;
+        const savedAmount = Number(saving.amount);
+        if (remaining >= savedAmount) {
+          await client.query("DELETE FROM savings WHERE id = $1", [saving.id]);
+          remaining -= savedAmount;
+        } else {
+          await client.query(
+            "UPDATE savings SET amount = amount - $2, updated_at = NOW() WHERE id = $1",
+            [saving.id, remaining],
+          );
+          remaining = 0;
+        }
+      }
+
+      const entry = await client.query(
+        `INSERT INTO social_fund_entries
+          (entry_type, category, member_id, amount, description, reference,
+           recorded_by, approval_request_id)
+         VALUES ('contribution','contribution',$1,$2,$3,$4,$5,$6) RETURNING id`,
+        [payload.member_id, payload.amount, payload.description,
+          payload.reference || null, reviewerId, request.id],
+      );
+      await client.query(
+        `INSERT INTO transactions
+          (member_id, amount, type, direction, description, reference, recorded_by)
+         VALUES
+          ($1,$2,'saving','outflow',$3,$4,$6),
+          ($1,$2,'social_fund','inflow',$3,$5,$6)`,
+        [payload.member_id, payload.amount,
+          `Savings transferred to Social Fund: ${payload.description}`,
+          `SOCIAL-CONTRIB-${request.id}-SAVINGS`,
+          `SOCIAL-CONTRIB-${request.id}-FUND`, reviewerId],
+      );
+      if (!entry.rowCount) {
+        throw Object.assign(new Error("Unable to create social-fund contribution"), { statusCode: 500 });
+      }
     } else if (request.action_type === "social_fund_disbursement") {
       const balanceResult = await client.query(`
         SELECT COALESCE(SUM(CASE WHEN entry_type='contribution' THEN amount ELSE -amount END),0) AS balance
@@ -145,4 +198,3 @@ export class Approval {
     }
   }
 }
-
