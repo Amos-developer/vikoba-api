@@ -27,6 +27,8 @@ export class Saving {
       FROM savings s
       JOIN members m
       ON s.member_id = m.id
+      WHERE s.cycle_id = (SELECT id FROM financial_cycles
+        WHERE status IN ('active','closing') ORDER BY start_date DESC LIMIT 1)
       ORDER BY s.id DESC
     `);
 

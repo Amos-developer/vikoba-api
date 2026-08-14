@@ -18,7 +18,7 @@ export class Shareout {
       await client.query("BEGIN");
       const result=await client.query(`SELECT s.*,c.name AS cycle_name,m.first_name,m.last_name
         FROM cycle_member_snapshots s JOIN financial_cycles c ON c.id=s.cycle_id
-        JOIN members m ON m.id=s.member_id WHERE s.id=$1 FOR UPDATE`,[id]);
+        JOIN members m ON m.id=s.member_id WHERE s.id=$1 AND c.status='closing' FOR UPDATE`,[id]);
       const item=result.rows[0];
       if(!item) throw Object.assign(new Error("Share-out record not found"),{statusCode:404});
       if(item.distribution_status==='paid') throw Object.assign(new Error("This share-out has already been paid"),{statusCode:409});

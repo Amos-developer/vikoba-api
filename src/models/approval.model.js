@@ -141,7 +141,9 @@ export class Approval {
     } else if (request.action_type === "social_fund_contribution") {
       const savingsResult = await client.query(
         `SELECT id, amount FROM savings
-         WHERE member_id = $1 ORDER BY created_at, id FOR UPDATE`,
+         WHERE member_id = $1 AND cycle_id = (
+           SELECT id FROM financial_cycles WHERE status='active' LIMIT 1
+         ) ORDER BY created_at, id FOR UPDATE`,
         [payload.member_id],
       );
       const availableSavings = savingsResult.rows.reduce(
@@ -224,9 +226,15 @@ export class Approval {
       );
       if(!shareout.rowCount) throw Object.assign(new Error("Unpaid share-out record not found"),{statusCode:404});
       await client.query(`INSERT INTO transactions
-        (member_id,amount,type,direction,description,reference,recorded_by)
-        VALUES ($1,$2,'shareout','outflow',$3,$4,$5)`,
-      [payload.member_id,payload.amount,payload.description,`SHAREOUT-${request.entity_id}`,reviewerId]);
+        (member_id,amount,type,direction,description,reference,recorded_by,cycle_id)
+        VALUES ($1,$2,'shareout','outflow',$3,$4,$5,$6)`,
+      [payload.member_id,payload.amount,payload.description,`SHAREOUT-${request.entity_id}`,reviewerId,payload.cycle_id]);
+      const remaining=await client.query(`SELECT COUNT(*)::int AS count
+        FROM cycle_member_snapshots WHERE cycle_id=$1 AND distribution_status='unpaid'`,[payload.cycle_id]);
+      if(remaining.rows[0].count===0){
+        await client.query(`UPDATE financial_cycles SET status='closed',closed_by=$2,
+          closed_at=NOW(),updated_at=NOW() WHERE id=$1 AND status='closing'`,[payload.cycle_id,reviewerId]);
+      }
     }
   }
 }

@@ -54,6 +54,8 @@ export class Loan {
       FROM loans l
       JOIN members m
       ON l.member_id = m.id
+      WHERE l.cycle_id = (SELECT id FROM financial_cycles
+        WHERE status IN ('active','closing') ORDER BY start_date DESC LIMIT 1)
       ORDER BY l.id DESC
     `);
 
@@ -207,5 +209,4 @@ export class Loan {
     }
   }
 }
-
 

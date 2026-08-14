@@ -46,10 +46,12 @@ export const getDashboardStats = async (req, res) => {
         ? pool.query("SELECT COUNT(*) AS total FROM members")
         : Promise.resolve({ rows: [{ total: 0 }] }),
       hasSavings
-        ? pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM savings")
+        ? pool.query(`SELECT COALESCE(SUM(amount), 0) AS total FROM savings
+            WHERE cycle_id=(SELECT id FROM financial_cycles WHERE status IN ('active','closing') LIMIT 1)`)
         : Promise.resolve({ rows: [{ total: 0 }] }),
       hasLoans
-        ? pool.query("SELECT COUNT(*) AS total FROM loans WHERE status = 'approved'")
+        ? pool.query(`SELECT COUNT(*) AS total FROM loans WHERE status = 'approved'
+            AND cycle_id=(SELECT id FROM financial_cycles WHERE status IN ('active','closing') LIMIT 1)`)
         : Promise.resolve({ rows: [{ total: 0 }] }),
     ]);
 
@@ -139,6 +141,7 @@ export const getRecentTransactions = async (req, res) => {
         ${hasCreatedAt ? "t.created_at" : "NULL AS created_at"}
       FROM transactions t
       JOIN members m ON m.id = t.member_id
+      WHERE t.cycle_id=(SELECT id FROM financial_cycles WHERE status IN ('active','closing') LIMIT 1)
       ORDER BY ${orderColumn} DESC
       LIMIT 5
     `);
