@@ -14,7 +14,14 @@ export class Penalty {
   static async create(data) {
     const result = await pool.query(
       `INSERT INTO penalties (member_id, amount, reason, status, due_date, paid_at)
-       VALUES ($1, $2, $3, $4, $5, CASE WHEN $4 = 'paid' THEN NOW() ELSE NULL END)
+       VALUES (
+         $1,
+         $2,
+         $3,
+         $4::varchar,
+         $5,
+         CASE WHEN $4::varchar = 'paid' THEN NOW() ELSE NULL END
+       )
        RETURNING *`,
       [data.member_id, data.amount, data.reason, data.status || "unpaid", data.due_date || null],
     );
@@ -48,5 +55,4 @@ export class Penalty {
     return result.rows[0];
   }
 }
-
 
