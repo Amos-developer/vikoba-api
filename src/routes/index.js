@@ -5,6 +5,7 @@ import dashboardRoutes from "./dashboard.routes.js";
 import loanRoutes from "./loan.routes.js";
 import memberRoutes from "./member.route.js";
 import penaltyRoutes from "./penalty.routes.js";
+import repaymentRoutes from "./repayment.routes.js";
 import savingsRoutes from "./savings.routes.js";
 import transactionRoutes from "./transaction.routes.js";
 
@@ -15,6 +16,7 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/loans", loanRoutes);
 router.use("/members", memberRoutes);
 router.use("/penalties", penaltyRoutes);
+router.use("/repayments", repaymentRoutes);
 router.use("/savings", savingsRoutes);
 router.use("/transactions", transactionRoutes);
 
