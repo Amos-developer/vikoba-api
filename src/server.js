@@ -4,12 +4,10 @@ import {
   connectToDatabase,
   disconnectFromDatabase,
 } from "./config/database.js";
-import { runMigrations } from "./config/migrations.js";
 
 const startServer = async () => {
   try {
     await connectToDatabase();
-    await runMigrations();
 
     const server = app.listen(env.port, () => {
       console.log(`VICOBA API listening on port ${env.port}`);
@@ -33,5 +31,4 @@ const startServer = async () => {
 };
 
 startServer();
-
 
