@@ -3,6 +3,9 @@ ALTER TABLE financial_cycles ADD CONSTRAINT financial_cycles_status_check
   CHECK (status IN ('draft','active','closing','closed'));
 
 ALTER TABLE savings ADD COLUMN IF NOT EXISTS cycle_id BIGINT REFERENCES financial_cycles(id) ON DELETE RESTRICT;
+ALTER TABLE savings
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE loans ADD COLUMN IF NOT EXISTS cycle_id BIGINT REFERENCES financial_cycles(id) ON DELETE RESTRICT;
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS cycle_id BIGINT REFERENCES financial_cycles(id) ON DELETE RESTRICT;
 ALTER TABLE penalties ADD COLUMN IF NOT EXISTS cycle_id BIGINT REFERENCES financial_cycles(id) ON DELETE RESTRICT;
