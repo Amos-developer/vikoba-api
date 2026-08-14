@@ -7,6 +7,11 @@ const validatePenalty = (data) => {
     error.statusCode = 400;
     throw error;
   }
+  if (!["unpaid", "paid", "waived"].includes(data.status || "unpaid")) {
+    const error = new Error("Penalty status must be unpaid, paid, or waived");
+    error.statusCode = 400;
+    throw error;
+  }
 };
 
 export const getPenalties = asyncHandler(async (req, res) => {
