@@ -2,6 +2,9 @@ import { Router } from "express";
 
 import authRoutes from "./auth.routes.js";
 import approvalRoutes from "./approval.routes.js";
+import cycleRoutes from "./cycle.routes.js";
+import expenseRoutes from "./expense.routes.js";
+import shareoutRoutes from "./shareout.routes.js";
 import dashboardRoutes from "./dashboard.routes.js";
 import loanRoutes from "./loan.routes.js";
 import memberRoutes from "./member.route.js";
@@ -18,6 +21,9 @@ const router = Router();
 
 router.use("/auth", authRoutes);
 router.use("/approvals", approvalRoutes);
+router.use("/cycles", cycleRoutes);
+router.use("/expenses", expenseRoutes);
+router.use("/shareouts", shareoutRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/loans", loanRoutes);
 router.use("/members", memberRoutes);
@@ -31,4 +37,3 @@ router.use("/transactions", transactionRoutes);
 router.use("/users", userRoutes);
 
 export default router;
-

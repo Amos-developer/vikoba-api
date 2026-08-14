@@ -15,9 +15,9 @@ export class Approval {
     return result.rows;
   }
 
-  static async create(data) {
+  static async create(data, queryClient = pool) {
     if (data.entity_id) {
-      const duplicate = await pool.query(
+      const duplicate = await queryClient.query(
         `SELECT id FROM approval_requests
          WHERE action_type = $1 AND entity_id = $2 AND status = 'pending'`,
         [data.action_type, data.entity_id],
@@ -28,7 +28,7 @@ export class Approval {
         throw error;
       }
     }
-    const result = await pool.query(
+    const result = await queryClient.query(
       `INSERT INTO approval_requests
         (action_type, entity_id, payload, reason, requested_by)
        VALUES ($1,$2,$3::jsonb,$4,$5) RETURNING *`,
@@ -65,6 +65,11 @@ export class Approval {
 
       if (decision === "approved") {
         await this.execute(client, request, reviewerId);
+      } else if (request.action_type === "expense" && request.entity_id) {
+        await client.query(
+          "UPDATE group_expenses SET status='rejected',updated_at=NOW() WHERE id=$1",
+          [request.entity_id],
+        );
       }
       const reviewed = await client.query(
         `UPDATE approval_requests SET status = $2, reviewed_by = $3,
@@ -103,13 +108,29 @@ export class Approval {
          ON CONFLICT (reference) WHERE reference IS NOT NULL DO NOTHING`,
         [loan.member_id, loan.amount, `Loan #${loan.id} disbursed`, reference, reviewerId],
       );
-    } else if (["withdrawal", "expense"].includes(request.action_type)) {
+    } else if (request.action_type === "withdrawal") {
       await client.query(
         `INSERT INTO transactions
           (member_id, amount, type, direction, description, reference, recorded_by)
          VALUES ($1,$2,$3,'outflow',$4,$5,$6)`,
         [payload.member_id || null, payload.amount, request.action_type,
           payload.description, payload.reference || null, reviewerId],
+      );
+    } else if (request.action_type === "expense") {
+      if (request.entity_id) {
+        const expense = await client.query(
+          `UPDATE group_expenses SET status='approved',approved_by=$2,
+             approved_at=NOW(),updated_at=NOW() WHERE id=$1 AND status='pending' RETURNING *`,
+          [request.entity_id, reviewerId],
+        );
+        if (!expense.rowCount) throw Object.assign(new Error("Pending expense not found"), { statusCode: 404 });
+      }
+      await client.query(
+        `INSERT INTO transactions
+          (member_id,amount,type,direction,description,reference,recorded_by)
+         VALUES (NULL,$1,'expense','outflow',$2,$3,$4)`,
+        [payload.amount, payload.description,
+          payload.reference || (request.entity_id ? `EXPENSE-${request.entity_id}` : null), reviewerId],
       );
     } else if (request.action_type === "penalty_waiver") {
       const result = await client.query(
@@ -195,6 +216,17 @@ export class Approval {
         [payload.member_id || null, payload.amount, payload.description,
           payload.reference || `SOCIAL-OUT-${entry.rows[0].id}`, reviewerId],
       );
+    } else if (request.action_type === "shareout_payment") {
+      const shareout = await client.query(
+        `UPDATE cycle_member_snapshots SET distribution_status='paid',paid_by=$2,paid_at=NOW()
+         WHERE id=$1 AND distribution_status='unpaid' RETURNING *`,
+        [request.entity_id,reviewerId],
+      );
+      if(!shareout.rowCount) throw Object.assign(new Error("Unpaid share-out record not found"),{statusCode:404});
+      await client.query(`INSERT INTO transactions
+        (member_id,amount,type,direction,description,reference,recorded_by)
+        VALUES ($1,$2,'shareout','outflow',$3,$4,$5)`,
+      [payload.member_id,payload.amount,payload.description,`SHAREOUT-${request.entity_id}`,reviewerId]);
     }
   }
 }
