@@ -1,52 +1,40 @@
 import { Transaction } from "../models/transaction.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const createTransaction = async (req, res) => {
-  try {
-    const {
-      member_id,
-      amount,
-      type,
-      description
-    } = req.body;
+const movementTypes = new Set([
+  "saving", "loan_disbursement", "repayment", "withdrawal",
+  "fine", "social_fund", "expense",
+]);
+const inflowTypes = new Set(["saving", "repayment", "fine", "social_fund"]);
 
-    const transaction =
-      await Transaction.create({
-        member_id,
-        amount,
-        type,
-        description
-      });
-
-    res.status(201).json({
-      success: true,
-      message: "Transaction created successfully",
-      data: transaction
-    });
-
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+export const createTransaction = asyncHandler(async (req, res) => {
+  const { member_id, amount, type, description, reference } = req.body;
+  if (!movementTypes.has(type) || Number(amount) <= 0 || !description?.trim()) {
+    const error = new Error("Valid movement type, positive amount, and description are required");
+    error.statusCode = 400;
+    throw error;
   }
-};
-
-export const getTransactions = async (req, res) => {
-  try {
-    const transactions =
-      await Transaction.findAll();
-
-    res.json({
-      success: true,
-      data: transactions
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+  if (type !== "expense" && !member_id) {
+    const error = new Error("A member is required for this movement type");
+    error.statusCode = 400;
+    throw error;
   }
-};
+
+  const transaction = await Transaction.create({
+    member_id,
+    amount: Number(amount),
+    type,
+    direction: inflowTypes.has(type) ? "inflow" : "outflow",
+    description: description.trim(),
+    reference,
+    recorded_by: req.user.userId,
+  });
+  res.status(201).json({ success: true, data: transaction });
+});
+
+export const getTransactions = asyncHandler(async (req, res) => {
+  const transactions = await Transaction.findAll(req.query);
+  res.json({ success: true, data: transactions });
+});
+
+

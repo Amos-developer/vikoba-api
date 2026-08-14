@@ -1,71 +1,35 @@
 import express from "express";
 import cors from "cors";
 
-import memberRoutes
-  from "./routes/member.route.js";
-
-  import {
+import { env } from "./config/env.js";
+import {
   errorHandler,
+  notFoundHandler,
 } from "./middlewares/error.middleware.js";
-
-import authRoutes
-from "./routes/auth.routes.js";
-
-import savingsRoutes from "./routes/savings.routes.js";  
-
-import loanRoutes from "./routes/loan.routes.js";
-
-import dashboardRoutes from "./routes/dashboard.routes.js";
-
-import transactionRoutes
-from "./routes/transaction.routes.js";
+import apiRoutes from "./routes/index.js";
 
 const app = express();
 
-app.use(express.json());
-
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: env.clientUrl,
     credentials: true,
-  })
+  }),
 );
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => {
+app.get("/health", (req, res) => {
   res.json({
-    message: "Vicoba API Running",
+    success: true,
+    message: "VICOBA API is healthy",
   });
 });
 
-app.use(
-  "/api/members",
-  memberRoutes
-);
-
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-app.use(
-  "/api/savings",
-  savingsRoutes
-);
-
-app.use(
-  "/api/loans",
-  loanRoutes
-);
-
-app.use(
-  "/api/dashboard", 
-  dashboardRoutes
-);
-
-app.use(
-  "/api/transactions",
-  transactionRoutes
-);
-
+app.use("/api", apiRoutes);
+app.use(notFoundHandler);
 app.use(errorHandler);
+
 export default app;
+
+

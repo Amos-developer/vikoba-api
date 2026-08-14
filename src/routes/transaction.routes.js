@@ -4,8 +4,12 @@ import {
   createTransaction,
   getTransactions
 } from "../controllers/transaction.controller.js";
+import { protect } from "../middlewares/auth.middleware.js";
+import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
+
+router.use(protect, authorizeRoles("admin", "treasurer"));
 
 router.post(
   "/",
@@ -18,3 +22,5 @@ router.get(
 );
 
 export default router;
+
+
