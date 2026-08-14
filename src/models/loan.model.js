@@ -159,4 +159,53 @@ export class Loan {
 
     return result.rows[0];
   }
+
+  static async approveWithLedger(id, recordedBy) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const loanResult = await client.query(
+        "SELECT * FROM loans WHERE id = $1 FOR UPDATE",
+        [id],
+      );
+      const currentLoan = loanResult.rows[0];
+      if (!currentLoan) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      const approvedResult = await client.query(
+        `UPDATE loans
+         SET status = 'approved', approved_at = COALESCE(approved_at, NOW())
+         WHERE id = $1
+         RETURNING *`,
+        [id],
+      );
+      const reference = `LOAN-${id}-DISBURSEMENT`;
+      const existingLedgerEntry = await client.query(
+        "SELECT id FROM transactions WHERE reference = $1",
+        [reference],
+      );
+
+      if (existingLedgerEntry.rowCount === 0) {
+        await client.query(
+          `INSERT INTO transactions
+            (member_id, amount, type, direction, description, reference, recorded_by)
+           VALUES ($1, $2, 'loan_disbursement', 'outflow', $3, $4, $5)`,
+          [currentLoan.member_id, currentLoan.amount,
+            `Loan #${id} disbursed`, reference, recordedBy],
+        );
+      }
+
+      await client.query("COMMIT");
+      return approvedResult.rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
+
+

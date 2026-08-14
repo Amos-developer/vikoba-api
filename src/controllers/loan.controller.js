@@ -1,5 +1,4 @@
 import { Loan } from "../models/loan.model.js";
-import { Transaction } from "../models/transaction.model.js";
 
 export const createLoan = async (req, res) => {
   try {
@@ -93,7 +92,7 @@ export const approveLoan = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const loan = await Loan.approve(id);
+    const loan = await Loan.approveWithLedger(id, req.user.userId);
 
     if (!loan) {
       return res.status(404).json({
@@ -101,8 +100,6 @@ export const approveLoan = async (req, res) => {
         message: "Loan not found",
       });
     }
-
-    await Transaction.create(loan.member_id, "loan", loan.amount);
 
     return res.json({
       success: true,
@@ -115,3 +112,5 @@ export const approveLoan = async (req, res) => {
     });
   }
 };
+
+
