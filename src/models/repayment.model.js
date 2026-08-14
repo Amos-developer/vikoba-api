@@ -59,8 +59,8 @@ export class Repayment {
 
       await client.query(
         `UPDATE loans
-         SET remaining_balance = $2,
-             status = CASE WHEN $2 = 0 THEN 'paid' ELSE status END
+         SET remaining_balance = $2::numeric,
+             status = CASE WHEN $2::numeric = 0::numeric THEN 'paid' ELSE status END
          WHERE id = $1`,
         [loan.id, balanceAfter],
       );
@@ -90,4 +90,3 @@ export class Repayment {
     }
   }
 }
-
