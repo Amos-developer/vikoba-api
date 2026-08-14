@@ -60,9 +60,11 @@ export class Cycle {
           COALESCE(SUM(amount) FILTER (WHERE direction='inflow'),0) AS inflows,
           COALESCE(SUM(amount) FILTER (WHERE direction='outflow'),0) AS outflows,
           COALESCE(SUM(amount) FILTER (WHERE type='fine' AND direction='inflow'),0) AS fine_income,
+          COALESCE(SUM(amount) FILTER (WHERE type='other_income' AND direction='inflow'),0) AS other_income,
           COALESCE(SUM(amount) FILTER (WHERE type='expense' AND direction='outflow'),0) AS expenses,
           COALESCE(SUM(amount) FILTER (WHERE type='fine' AND direction='inflow'),0) -
           COALESCE(SUM(amount) FILTER (WHERE type='expense' AND direction='outflow'),0) +
+          COALESCE(SUM(amount) FILTER (WHERE type='other_income' AND direction='inflow'),0) +
           COALESCE((SELECT SUM(r.amount * ((l.total_payable-l.amount) / NULLIF(l.total_payable,0)))
             FROM loan_repayments r JOIN loans l ON l.id=r.loan_id
             WHERE r.cycle_id=$1),0)
@@ -99,7 +101,8 @@ export class Cycle {
       }
       const summary = { totalSavings, totalInflows: Number(finance.rows[0].inflows),
         totalOutflows: Number(finance.rows[0].outflows), distributableEarnings: earnings,
-        fineIncome:Number(finance.rows[0].fine_income),expenses:Number(finance.rows[0].expenses),
+        fineIncome:Number(finance.rows[0].fine_income),otherIncome:Number(finance.rows[0].other_income),
+        expenses:Number(finance.rows[0].expenses),
         unpaidPenalties:Number(obligations.rows[0].unpaid_penalty_amount),
         projectedShareout: totalSavings + earnings,
         outstandingLoans: Number(loans.rows[0].outstanding),

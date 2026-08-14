@@ -1,0 +1,2 @@
+import { Router } from 'express';import { createIncome,getIncome } from '../controllers/income.controller.js';import { protect } from '../middlewares/auth.middleware.js';import { authorizeRoles } from '../middlewares/role.middleware.js';
+const router=Router();router.get('/',protect,authorizeRoles('chairperson','treasurer','secretary'),getIncome);router.post('/',protect,authorizeRoles('treasurer'),createIncome);export default router;

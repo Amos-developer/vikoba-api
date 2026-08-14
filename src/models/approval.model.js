@@ -70,6 +70,8 @@ export class Approval {
           "UPDATE group_expenses SET status='rejected',updated_at=NOW() WHERE id=$1",
           [request.entity_id],
         );
+      } else if (request.action_type === "other_income" && request.entity_id) {
+        await client.query("UPDATE group_income SET status='rejected',updated_at=NOW() WHERE id=$1",[request.entity_id]);
       }
       const reviewed = await client.query(
         `UPDATE approval_requests SET status = $2, reviewed_by = $3,
@@ -132,6 +134,14 @@ export class Approval {
         [payload.amount, payload.description,
           payload.reference || (request.entity_id ? `EXPENSE-${request.entity_id}` : null), reviewerId],
       );
+    } else if (request.action_type === "other_income") {
+      const income=await client.query(`UPDATE group_income SET status='approved',approved_by=$2,
+        approved_at=NOW(),updated_at=NOW() WHERE id=$1 AND status='pending' RETURNING *`,[request.entity_id,reviewerId]);
+      if(!income.rowCount) throw Object.assign(new Error('Pending income record not found'),{statusCode:404});
+      await client.query(`INSERT INTO transactions
+        (member_id,amount,type,direction,description,reference,recorded_by,cycle_id)
+        VALUES (NULL,$1,'other_income','inflow',$2,$3,$4,$5)`,[payload.amount,payload.description,
+          payload.reference||`INCOME-${request.entity_id}`,reviewerId,payload.cycle_id]);
     } else if (request.action_type === "penalty_waiver") {
       const result = await client.query(
         "UPDATE penalties SET status = 'waived', updated_at = NOW() WHERE id = $1 RETURNING id",
