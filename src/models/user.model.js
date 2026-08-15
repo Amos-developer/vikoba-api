@@ -18,7 +18,7 @@ export class User {
         role
       )
       VALUES ($1,$2,$3,$4)
-      RETURNING id,name,email,role;
+      RETURNING id,name,email,role,language;
     `;
 
     const result =

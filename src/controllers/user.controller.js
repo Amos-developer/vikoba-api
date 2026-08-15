@@ -6,7 +6,7 @@ const roles = new Set(["admin", "chairperson", "treasurer", "secretary", "member
 
 export const getUsers = asyncHandler(async (req, res) => {
   const result = await pool.query(
-    "SELECT id, name, email, role, is_active, created_at FROM users ORDER BY created_at DESC",
+    "SELECT id, name, email, role, language, is_active, created_at FROM users ORDER BY created_at DESC",
   );
   res.json({ success: true, data: result.rows });
 });
@@ -45,5 +45,4 @@ export const updateUser = asyncHandler(async (req, res) => {
   }
   res.json({ success: true, data: result.rows[0] });
 });
-
 

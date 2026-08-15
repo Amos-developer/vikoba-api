@@ -58,7 +58,8 @@ async (req,res) => {
 
   const {
     email,
-    password
+    password,
+    language,
   } = req.body;
 
   const user =
@@ -95,6 +96,11 @@ async (req,res) => {
       });
   }
 
+  const selectedLanguage = ["en", "sw"].includes(language) ? language : user.language || "en";
+  if (selectedLanguage !== user.language) {
+    await pool.query("UPDATE users SET language=$1 WHERE id=$2", [selectedLanguage, user.id]);
+  }
+
   const sessionId = randomUUID();
   const expiresAt = new Date(Date.now() + env.sessionHours * 60 * 60 * 1000);
   await pool.query(
@@ -106,6 +112,7 @@ async (req,res) => {
       {
         userId:user.id,
         role:user.role,
+        language:selectedLanguage,
         sid:sessionId
       },
       env.jwtSecret,
@@ -117,12 +124,21 @@ async (req,res) => {
   res.json({
     success:true,
     token,
-    expiresAt
+    expiresAt,
+    language:selectedLanguage
   });
+};
+
+export const updateLanguage = async (req,res) => {
+  const { language } = req.body;
+  if (!["en", "sw"].includes(language)) {
+    return res.status(400).json({success:false,message:"Language must be English or Swahili"});
+  }
+  await pool.query("UPDATE users SET language=$1 WHERE id=$2",[language,req.user.userId]);
+  return res.json({success:true,data:{language}});
 };
 
 export const logout = async (req,res) => {
   await pool.query("UPDATE user_sessions SET revoked_at=NOW() WHERE id=$1 AND user_id=$2",[req.user.sid,req.user.userId]);
   res.json({success:true,message:"Session ended"});
 };
-

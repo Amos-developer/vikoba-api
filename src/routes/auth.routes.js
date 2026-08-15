@@ -4,7 +4,8 @@ from "express";
 import {
   register,
   login,
-  logout
+  logout,
+  updateLanguage
 }
 from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
@@ -24,6 +25,6 @@ router.post(
   login
 );
 router.post("/logout",protect,logout);
+router.patch("/language",protect,updateLanguage);
 
 export default router;
-
