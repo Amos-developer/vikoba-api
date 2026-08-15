@@ -92,6 +92,7 @@ export const deleteLoan = async (req, res) => {
 export const approveLoan = async (req, res) => {
   try {
     const { id } = req.params;
+    const reason = req.body?.reason?.trim();
 
     const loan = await Loan.getById(id);
 
@@ -106,7 +107,7 @@ export const approveLoan = async (req, res) => {
       action_type: "loan_disbursement",
       entity_id: loan.id,
       payload: { member_id: loan.member_id, amount: loan.amount },
-      reason: req.body.reason || `Approve and disburse loan #${loan.id}`,
+      reason: reason || `Approve and disburse loan #${loan.id}`,
       requested_by: req.user.userId,
     });
 
@@ -122,5 +123,4 @@ export const approveLoan = async (req, res) => {
     });
   }
 };
-
 
