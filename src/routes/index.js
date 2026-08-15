@@ -19,10 +19,12 @@ import savingsRoutes from "./savings.routes.js";
 import socialFundRoutes from "./socialFund.routes.js";
 import transactionRoutes from "./transaction.routes.js";
 import userRoutes from "./user.routes.js";
+import billingRoutes from "./billing.routes.js";
 
 const router = Router();
 
 router.use("/auth", authRoutes);
+router.use("/billing", billingRoutes);
 router.use("/approvals", approvalRoutes);
 router.use("/audit-logs", auditRoutes);
 router.use("/cycles", cycleRoutes);

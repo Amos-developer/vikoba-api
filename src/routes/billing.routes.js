@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { billingWebhook,cancelSubscription,createCheckout,getBillingOverview,getPlans } from "../controllers/billing.controller.js";
+import { protect } from "../middlewares/auth.middleware.js";
+import { requireBillingAdmin } from "../middlewares/subscription.middleware.js";
+import { rateLimit } from "../middlewares/rate-limit.middleware.js";
+const router=Router();
+router.get("/plans",getPlans);
+router.post("/webhook",rateLimit({windowMs:60_000,max:120,keyPrefix:"billing-webhook"}),billingWebhook);
+router.get("/overview",protect,getBillingOverview);
+router.post("/checkout",protect,requireBillingAdmin,createCheckout);
+router.post("/cancel",protect,requireBillingAdmin,cancelSubscription);
+export default router;

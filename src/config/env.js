@@ -23,10 +23,17 @@ if (missingVariables.length > 0) {
 const databasePort = Number(process.env.DB_PORT ?? 5432);
 const appPort = Number(process.env.PORT ?? 3000);
 const sessionHours = Number(process.env.SESSION_HOURS ?? 8);
+const billingWebhookToleranceSeconds = Number(process.env.BILLING_WEBHOOK_TOLERANCE_SECONDS ?? 300);
 
 if (!Number.isInteger(databasePort) || !Number.isInteger(appPort)
-    || !Number.isFinite(sessionHours) || sessionHours <= 0) {
+    || !Number.isFinite(sessionHours) || sessionHours <= 0
+    || !Number.isFinite(billingWebhookToleranceSeconds) || billingWebhookToleranceSeconds <= 0) {
   throw new Error("PORT, DB_PORT, and SESSION_HOURS must be valid positive numbers");
+}
+
+if ((process.env.NODE_ENV ?? "development") === "production"
+    && (!process.env.BILLING_WEBHOOK_SECRET || process.env.BILLING_WEBHOOK_SECRET.length < 32)) {
+  throw new Error("BILLING_WEBHOOK_SECRET must contain at least 32 characters in production");
 }
 
 export const env = Object.freeze({
@@ -35,6 +42,12 @@ export const env = Object.freeze({
   clientUrl: process.env.CLIENT_URL ?? "http://localhost:5173",
   jwtSecret: process.env.JWT_SECRET,
   sessionHours,
+  billing: Object.freeze({
+    provider: process.env.BILLING_PROVIDER ?? "external",
+    checkoutUrl: process.env.BILLING_CHECKOUT_URL ?? "",
+    webhookSecret: process.env.BILLING_WEBHOOK_SECRET ?? "",
+    webhookToleranceSeconds: billingWebhookToleranceSeconds,
+  }),
   database: Object.freeze({
     host: process.env.DB_HOST,
     port: databasePort,
@@ -43,4 +56,3 @@ export const env = Object.freeze({
     password: process.env.DB_PASSWORD,
   }),
 });
-
