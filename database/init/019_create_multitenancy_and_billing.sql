@@ -136,6 +136,12 @@ CREATE OR REPLACE FUNCTION app_current_organization_id() RETURNS BIGINT AS $$
   SELECT NULLIF(current_setting('app.organization_id',true),'')::BIGINT
 $$ LANGUAGE SQL STABLE;
 
+-- These append-only tables reject normal updates. Tenant assignment is a
+-- one-time ownership backfill, so disable only their immutability triggers
+-- inside this migration transaction and restore them immediately afterward.
+ALTER TABLE transactions DISABLE TRIGGER transactions_are_immutable;
+ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_are_immutable;
+
 DO $$
 DECLARE table_name TEXT; legacy_id BIGINT;
 BEGIN
@@ -157,6 +163,9 @@ BEGIN
     EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (organization_id=app_current_organization_id()) WITH CHECK (organization_id=app_current_organization_id())',table_name);
   END LOOP;
 END $$;
+
+ALTER TABLE transactions ENABLE TRIGGER transactions_are_immutable;
+ALTER TABLE audit_logs ENABLE TRIGGER audit_logs_are_immutable;
 
 DO $$
 DECLARE table_name TEXT;
