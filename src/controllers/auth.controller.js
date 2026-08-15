@@ -148,6 +148,7 @@ export const startTrial = async (req,res) => {
     const slug=`${slugify(group_name)||"vikoba"}-${randomUUID().slice(0,8)}`;
     const organization=(await client.query(`INSERT INTO organizations(name,slug,billing_email,billing_phone)
       VALUES($1,$2,$3,$4) RETURNING *`,[group_name.trim(),slug,normalizedEmail,normalizedPhone])).rows[0];
+    await client.query("SELECT set_config('app.organization_id',$1,true)",[String(organization.id)]);
     const hashedPassword=await bcrypt.hash(password,10);
     const user=(await client.query(`INSERT INTO users(name,email,password,role,language) VALUES($1,$2,$3,'admin',$4)
       RETURNING id,name,email,language`,[name.trim(),normalizedEmail,hashedPassword,language==="sw"?"sw":"en"])).rows[0];
