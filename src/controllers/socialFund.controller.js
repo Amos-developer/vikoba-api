@@ -9,6 +9,7 @@ export const getSocialFund = asyncHandler(async (req, res) => {
 export const createSocialFundEntry = asyncHandler(async (req, res) => {
   const { entry_type, member_id, beneficiary_name, category, amount,
     description, reference } = req.body;
+  const normalizedReference = reference?.trim() || null;
   if (!['contribution', 'disbursement'].includes(entry_type)
       || Number(amount) <= 0 || !description?.trim()) {
     const error = new Error("Valid entry type, positive amount, and description are required");
@@ -17,6 +18,10 @@ export const createSocialFundEntry = asyncHandler(async (req, res) => {
   if (entry_type === 'contribution' && !member_id) {
     const error = new Error("Select the contributing member");
     error.statusCode = 400; throw error;
+  }
+  if (normalizedReference && await SocialFund.referenceExists(normalizedReference)) {
+    const error = new Error("This Social Fund reference is already used or awaiting approval. Enter a unique reference or leave it blank");
+    error.statusCode = 409; throw error;
   }
   if (entry_type === 'disbursement') {
     if (!['sickness', 'funeral', 'emergency', 'other'].includes(category)
@@ -27,7 +32,7 @@ export const createSocialFundEntry = asyncHandler(async (req, res) => {
     const approval = await Approval.create({
       action_type: 'social_fund_disbursement',
       payload: { member_id: member_id || null, beneficiary_name: beneficiary_name.trim(),
-        category, amount: Number(amount), description: description.trim(), reference },
+        category, amount: Number(amount), description: description.trim(), reference: normalizedReference },
       reason: `Social support for ${beneficiary_name.trim()}: ${description.trim()}`,
       requested_by: req.user.userId,
     });
@@ -36,7 +41,7 @@ export const createSocialFundEntry = asyncHandler(async (req, res) => {
   }
   const approval = await Approval.create({
     action_type: "social_fund_contribution",
-    payload: { member_id, amount: Number(amount), description: description.trim(), reference },
+    payload: { member_id, amount: Number(amount), description: description.trim(), reference: normalizedReference },
     reason: `Transfer member savings to social fund: ${description.trim()}`,
     requested_by: req.user.userId,
   });

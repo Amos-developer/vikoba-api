@@ -1,0 +1,7 @@
+import { Share } from '../models/share.model.js';import { asyncHandler } from '../utils/asyncHandler.js';
+export const getShares=asyncHandler(async(_req,res)=>res.json({success:true,data:await Share.report()}));
+export const configureShares=asyncHandler(async(req,res)=>{const {share_price,minimum_shares=0,maximum_shares}=req.body;const cycle=(await Share.report()).cycle;
+  if(!cycle||cycle.status!=='active')throw Object.assign(new Error('An active cycle is required'),{statusCode:409});if(Number(share_price)<=0||Number(minimum_shares)<0||(maximum_shares&&Number(maximum_shares)<Number(minimum_shares)))throw Object.assign(new Error('Enter a valid share price and cycle limits'),{statusCode:400});
+  res.json({success:true,data:await Share.configure({cycle_id:cycle.id,share_price:Number(share_price),minimum_shares:Number(minimum_shares),maximum_shares:maximum_shares?Number(maximum_shares):null,configured_by:req.user.userId})});});
+export const purchaseShares=asyncHandler(async(req,res)=>{const {member_id,number_of_shares,reference,notes}=req.body;if(!member_id||!Number.isInteger(Number(number_of_shares))||Number(number_of_shares)<=0)throw Object.assign(new Error('Member and a positive whole number of shares are required'),{statusCode:400});
+  res.status(201).json({success:true,data:await Share.purchase({member_id:Number(member_id),number_of_shares:Number(number_of_shares),reference,notes,recorded_by:req.user.userId})});});

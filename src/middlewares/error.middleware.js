@@ -19,7 +19,10 @@ export const errorHandler = (error, req, res, next) => {
     "23505": "A record with these details already exists",
     "23514": "The submitted penalty details violate a database rule",
   };
-  const databaseMessage = databaseErrors[error.code];
+  const constraintMessages = {
+    idx_social_fund_reference: "This Social Fund reference has already been used. Enter a unique reference or leave it blank",
+  };
+  const databaseMessage = constraintMessages[error.constraint] ?? databaseErrors[error.code];
   const statusCode = error.statusCode ?? (databaseMessage ? 400 : 500);
 
   return res.status(statusCode).json({
@@ -27,4 +30,3 @@ export const errorHandler = (error, req, res, next) => {
     message: databaseMessage ?? (statusCode === 500 ? "Internal server error" : error.message),
   });
 };
-

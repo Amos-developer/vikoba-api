@@ -149,6 +149,10 @@ export class Approval {
       );
       if (!result.rowCount) throw Object.assign(new Error("Penalty not found"), { statusCode: 404 });
     } else if (request.action_type === "social_fund_contribution") {
+      if (payload.reference) {
+        const duplicate = await client.query("SELECT id FROM social_fund_entries WHERE reference=$1",[payload.reference]);
+        if (duplicate.rowCount) throw Object.assign(new Error(`Social Fund reference '${payload.reference}' is already used. Reject this request and submit it again with a unique reference or no reference`),{statusCode:409});
+      }
       const savingsResult = await client.query(
         `SELECT id, amount FROM savings
          WHERE member_id = $1 AND cycle_id = (
@@ -204,6 +208,10 @@ export class Approval {
         throw Object.assign(new Error("Unable to create social-fund contribution"), { statusCode: 500 });
       }
     } else if (request.action_type === "social_fund_disbursement") {
+      if (payload.reference) {
+        const duplicate = await client.query("SELECT id FROM social_fund_entries WHERE reference=$1",[payload.reference]);
+        if (duplicate.rowCount) throw Object.assign(new Error(`Social Fund reference '${payload.reference}' is already used. Reject this request and submit it again with a unique reference or no reference`),{statusCode:409});
+      }
       const balanceResult = await client.query(`
         SELECT COALESCE(SUM(CASE WHEN entry_type='contribution' THEN amount ELSE -amount END),0) AS balance
         FROM social_fund_entries

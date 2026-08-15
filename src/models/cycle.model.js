@@ -7,6 +7,7 @@ export class Cycle {
              COALESCE((SELECT json_agg(json_build_object(
                'member_id', s.member_id, 'first_name', m.first_name,
                'last_name', m.last_name, 'savings_amount', s.savings_amount,
+               'shares_count', s.shares_count, 'shares_value', s.shares_value,
                'savings_ratio', s.savings_ratio, 'earnings_share', s.earnings_share,
                'projected_shareout', s.projected_shareout,
                'distribution_status', s.distribution_status
@@ -70,16 +71,22 @@ export class Cycle {
             WHERE r.cycle_id=$1),0)
           AS distributable_earnings
           FROM transactions WHERE cycle_id=$1`, params),
-        client.query(`SELECT m.id AS member_id, COALESCE(SUM(s.amount),0) AS savings
-          FROM members m LEFT JOIN savings s ON s.member_id=m.id AND s.cycle_id=$1
-          GROUP BY m.id ORDER BY m.id`, params),
+        client.query(`SELECT m.id AS member_id,COALESCE(s.total,0) AS savings,
+          COALESCE(sh.shares,0)::int AS shares_count,COALESCE(sh.value,0) AS shares_value
+          FROM members m
+          LEFT JOIN (SELECT member_id,SUM(amount) AS total FROM savings WHERE cycle_id=$1 GROUP BY member_id) s ON s.member_id=m.id
+          LEFT JOIN (SELECT member_id,SUM(number_of_shares) AS shares,SUM(total_value) AS value FROM share_purchases WHERE cycle_id=$1 GROUP BY member_id) sh ON sh.member_id=m.id
+          ORDER BY m.id`, params),
         client.query(`SELECT COALESCE(SUM(remaining_balance),0) AS outstanding
           FROM loans WHERE cycle_id=$1 AND remaining_balance > 0`, params),
         client.query(`SELECT
           COUNT(*) FILTER (WHERE p.status='unpaid')::int AS unpaid_penalties,
           COALESCE(SUM(p.amount) FILTER (WHERE p.status='unpaid'),0) AS unpaid_penalty_amount,
           (SELECT COUNT(*)::int FROM group_expenses e WHERE e.cycle_id=$1 AND e.status='pending') AS pending_expenses,
-          (SELECT COUNT(*)::int FROM approval_requests a WHERE a.status='pending') AS pending_approvals
+          (SELECT COUNT(*)::int FROM approval_requests a WHERE a.status='pending') AS pending_approvals,
+          (SELECT COUNT(*)::int FROM members m CROSS JOIN cycle_share_settings css
+            LEFT JOIN (SELECT member_id,SUM(number_of_shares) AS owned FROM share_purchases WHERE cycle_id=$1 GROUP BY member_id) sp ON sp.member_id=m.id
+            WHERE css.cycle_id=$1 AND COALESCE(sp.owned,0)<css.minimum_shares) AS members_below_minimum_shares
           FROM penalties p WHERE p.cycle_id=$1`,params),
       ]);
       const blockers=[];
@@ -87,26 +94,31 @@ export class Cycle {
       if(Number(obligations.rows[0].unpaid_penalties)>0) blockers.push(`unpaid penalties: ${obligations.rows[0].unpaid_penalties}`);
       if(Number(obligations.rows[0].pending_expenses)>0) blockers.push(`pending expenses: ${obligations.rows[0].pending_expenses}`);
       if(Number(obligations.rows[0].pending_approvals)>0) blockers.push(`pending approvals: ${obligations.rows[0].pending_approvals}`);
+      if(Number(obligations.rows[0].members_below_minimum_shares)>0) blockers.push(`members below minimum Hisa: ${obligations.rows[0].members_below_minimum_shares}`);
       if(blockers.length) throw Object.assign(new Error(`Resolve closing obligations first (${blockers.join(', ')})`),{statusCode:409});
       const totalSavings = savings.rows.reduce((sum, row) => sum + Number(row.savings), 0);
+      const totalShareValue = savings.rows.reduce((sum,row)=>sum+Number(row.shares_value),0);
+      const totalCapital = totalSavings + totalShareValue;
       const earnings = Math.max(0, Number(finance.rows[0].distributable_earnings));
       for (const member of savings.rows) {
         const memberSavings = Number(member.savings);
-        if (memberSavings <= 0) continue;
-        const share = totalSavings > 0 ? earnings * memberSavings / totalSavings : 0;
-        const ratio = totalSavings > 0 ? memberSavings / totalSavings : 0;
+        const shareValue=Number(member.shares_value);const capital=memberSavings+shareValue;
+        if (capital <= 0) continue;
+        const share = totalCapital > 0 ? earnings * capital / totalCapital : 0;
+        const ratio = totalCapital > 0 ? capital / totalCapital : 0;
         await client.query(`INSERT INTO cycle_member_snapshots
-          (cycle_id,member_id,savings_amount,savings_ratio,earnings_share,projected_shareout)
-          VALUES ($1,$2,$3,$4,$5,$6)`, [id, member.member_id, memberSavings, ratio, share, memberSavings + share]);
+          (cycle_id,member_id,savings_amount,shares_count,shares_value,savings_ratio,earnings_share,projected_shareout)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [id,member.member_id,memberSavings,member.shares_count,shareValue,ratio,share,capital+share]);
       }
       const summary = { totalSavings, totalInflows: Number(finance.rows[0].inflows),
+        totalShares:savings.rows.reduce((sum,row)=>sum+Number(row.shares_count),0),totalShareValue,totalCapital,
         totalOutflows: Number(finance.rows[0].outflows), distributableEarnings: earnings,
         fineIncome:Number(finance.rows[0].fine_income),otherIncome:Number(finance.rows[0].other_income),
         expenses:Number(finance.rows[0].expenses),
         unpaidPenalties:Number(obligations.rows[0].unpaid_penalty_amount),
         projectedShareout: totalSavings + earnings,
         outstandingLoans: Number(loans.rows[0].outstanding),
-        memberCount: savings.rows.filter((member) => Number(member.savings) > 0).length };
+        memberCount: savings.rows.filter((member) => Number(member.savings)+Number(member.shares_value) > 0).length };
       const result = await client.query(`UPDATE financial_cycles SET status='closing',
         closing_notes=$2,closing_summary=$3::jsonb,updated_at=NOW()
         WHERE id=$1 RETURNING *`, [id, notes || null, JSON.stringify(summary)]);

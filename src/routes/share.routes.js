@@ -1,0 +1,2 @@
+import { Router } from 'express';import { configureShares,getShares,purchaseShares } from '../controllers/share.controller.js';import { protect } from '../middlewares/auth.middleware.js';import { authorizeRoles } from '../middlewares/role.middleware.js';
+const router=Router();router.get('/',protect,authorizeRoles('chairperson','treasurer','secretary'),getShares);router.put('/settings',protect,authorizeRoles('chairperson','treasurer'),configureShares);router.post('/purchases',protect,authorizeRoles('treasurer'),purchaseShares);export default router;

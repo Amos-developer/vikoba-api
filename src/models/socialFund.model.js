@@ -1,6 +1,16 @@
 import { pool } from "../config/database.js";
 
 export class SocialFund {
+  static async referenceExists(reference) {
+    if (!reference) return false;
+    const result = await pool.query(`SELECT
+      EXISTS(SELECT 1 FROM social_fund_entries WHERE reference=$1) OR
+      EXISTS(SELECT 1 FROM approval_requests WHERE status='pending'
+        AND action_type IN ('social_fund_contribution','social_fund_disbursement')
+        AND payload->>'reference'=$1) AS exists`, [reference]);
+    return result.rows[0].exists;
+  }
+
   static async findAll() {
     const [entries, requests, totals] = await Promise.all([
       pool.query(`
