@@ -7,6 +7,7 @@ import {
   notFoundHandler,
 } from "./middlewares/error.middleware.js";
 import apiRoutes from "./routes/index.js";
+import { auditTrail } from "./middlewares/audit.middleware.js";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(auditTrail);
 
 app.get("/health", (req, res) => {
   res.json({
@@ -31,5 +33,4 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 export default app;
-
 

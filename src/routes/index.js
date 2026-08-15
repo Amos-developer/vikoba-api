@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import authRoutes from "./auth.routes.js";
 import approvalRoutes from "./approval.routes.js";
+import auditRoutes from "./audit.routes.js";
 import cycleRoutes from "./cycle.routes.js";
 import expenseRoutes from "./expense.routes.js";
 import shareoutRoutes from "./shareout.routes.js";
@@ -22,6 +23,7 @@ const router = Router();
 
 router.use("/auth", authRoutes);
 router.use("/approvals", approvalRoutes);
+router.use("/audit-logs", auditRoutes);
 router.use("/cycles", cycleRoutes);
 router.use("/expenses", expenseRoutes);
 router.use("/shareouts", shareoutRoutes);
