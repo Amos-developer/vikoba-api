@@ -32,6 +32,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       CLIENT_URL: http://localhost:8080
+      SESSION_HOURS: ${SESSION_HOURS:-8}
     command: ["sh", "-c", "npm run db:migrate && npm start"]
     ports:
       - "3002:3000"
@@ -51,6 +52,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
+        VITE_SESSION_IDLE_MINUTES: ${VITE_SESSION_IDLE_MINUTES:-30}
     container_name: vikoba-web
     restart: unless-stopped
     ports:

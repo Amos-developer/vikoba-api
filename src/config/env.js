@@ -22,9 +22,11 @@ if (missingVariables.length > 0) {
 
 const databasePort = Number(process.env.DB_PORT ?? 5432);
 const appPort = Number(process.env.PORT ?? 3000);
+const sessionHours = Number(process.env.SESSION_HOURS ?? 8);
 
-if (!Number.isInteger(databasePort) || !Number.isInteger(appPort)) {
-  throw new Error("PORT and DB_PORT must be valid integers");
+if (!Number.isInteger(databasePort) || !Number.isInteger(appPort)
+    || !Number.isFinite(sessionHours) || sessionHours <= 0) {
+  throw new Error("PORT, DB_PORT, and SESSION_HOURS must be valid positive numbers");
 }
 
 export const env = Object.freeze({
@@ -32,6 +34,7 @@ export const env = Object.freeze({
   port: appPort,
   clientUrl: process.env.CLIENT_URL ?? "http://localhost:5173",
   jwtSecret: process.env.JWT_SECRET,
+  sessionHours,
   database: Object.freeze({
     host: process.env.DB_HOST,
     port: databasePort,
@@ -40,5 +43,4 @@ export const env = Object.freeze({
     password: process.env.DB_PASSWORD,
   }),
 });
-
 

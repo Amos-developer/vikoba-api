@@ -1,8 +1,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "node:crypto";
 
 import { User }
 from "../models/user.model.js";
+import { pool } from "../config/database.js";
+import { env } from "../config/env.js";
 
 // Register user
 export const register =
@@ -92,23 +95,34 @@ async (req,res) => {
       });
   }
 
+  const sessionId = randomUUID();
+  const expiresAt = new Date(Date.now() + env.sessionHours * 60 * 60 * 1000);
+  await pool.query(
+    `INSERT INTO user_sessions (id,user_id,expires_at) VALUES ($1,$2,$3)`,
+    [sessionId,user.id,expiresAt],
+  );
   const token =
     jwt.sign(
       {
         userId:user.id,
-        role:user.role
+        role:user.role,
+        sid:sessionId
       },
-      process.env.JWT_SECRET,
+      env.jwtSecret,
       {
-        expiresIn:
-        process.env.JWT_EXPIRES_IN
+        expiresIn: `${env.sessionHours}h`
       }
     );
 
   res.json({
     success:true,
-    token
+    token,
+    expiresAt
   });
 };
 
+export const logout = async (req,res) => {
+  await pool.query("UPDATE user_sessions SET revoked_at=NOW() WHERE id=$1 AND user_id=$2",[req.user.sid,req.user.userId]);
+  res.json({success:true,message:"Session ended"});
+};
 
